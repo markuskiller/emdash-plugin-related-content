@@ -1,4 +1,5 @@
 export type RelatedContentPlacement = "head" | "body:start" | "body:end";
+export type RelatedContentRenderMode = "fragment" | "manual" | "both";
 
 export interface EntryLike {
   id: string;
@@ -16,6 +17,40 @@ export interface RelatedContentOptions {
   listClassName?: string;
   itemClassName?: string;
   linkClassName?: string;
+  headingLevel?: 2 | 3 | 4;
+  includeExcerpt?: boolean;
+}
+
+export interface ContentListResult {
+  items?: EntryLike[];
+  entries?: EntryLike[];
+  data?: EntryLike[];
+  results?: EntryLike[];
+}
+
+export interface ContentReader {
+  get(collection: string, id: string): Promise<EntryLike | null>;
+  list(collection: string, options?: unknown): Promise<ContentListResult>;
+}
+
+export interface GetRelatedContentOptions {
+  sourceEntry: EntryLike;
+  relationships: RelatedContentRelationship[];
+  content: ContentReader;
+}
+
+export interface RelatedContentSection {
+  relationship: RelatedContentRelationship;
+  matches: RelatedEntryMatch[];
+}
+
+export interface RenderRelatedContentSectionOptions {
+  className?: string;
+  listClassName?: string;
+  itemClassName?: string;
+  linkClassName?: string;
+  headingLevel?: 2 | 3 | 4;
+  includeExcerpt?: boolean;
 }
 
 export interface RelatedContentRelationship {
@@ -25,6 +60,7 @@ export interface RelatedContentRelationship {
   maxItems?: number;
   scanLimit?: number;
   placement?: RelatedContentPlacement;
+  renderMode?: RelatedContentRenderMode;
   relatedField?: string;
   sourceSlug?: string;
   matchTitle?: boolean;

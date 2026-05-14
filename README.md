@@ -1,8 +1,8 @@
 # emdash-plugin-related-content
 
-A collection-agnostic native emdash plugin that automatically renders dynamic related content on public content detail pages.
+A collection-agnostic native emdash plugin that automatically renders dynamic related content on public content detail pages, with optional manual rendering for templates that need exact placement control.
 
-This package follows the current emdash native plugin docs: the root export provides a descriptor factory, `relatedContentPlugin()`, and a runtime `createPlugin()` default export. The source is exported directly from `src/index.ts`, matching current first-party emdash plugin packages and keeping this repository lightweight for server-side testing.
+This package follows the current emdash native plugin docs: the root export provides a descriptor factory, `relatedContentPlugin()`, and a runtime `createPlugin()` default export. The package ships built ESM JavaScript and type declarations from `dist/`.
 
 ## Emdash Plugin Architecture Notes
 
@@ -59,6 +59,7 @@ export default {
 							relatedCollection: "posts",
 							heading: "Related posts on langui.ch",
 							maxItems: 6,
+							renderMode: "fragment",
 							placement: "body:end",
 							relatedField: "relatedEntries",
 							matchTitle: true,
@@ -90,6 +91,64 @@ The plugin declares:
 - `hooks.page-fragments:register`, to render related content through `page:fragments`.
 
 Fragments default to `placement: "body:end"`. Current emdash templates need the matching fragment outlet, usually `<EmDashBodyEnd />`, for that placement to appear. The plugin does not require relationship-specific theme changes.
+
+## Manual Rendering
+
+Each relationship can choose where it renders:
+
+- `renderMode: "fragment"` keeps the default no-theme-change page-fragment behavior.
+- `renderMode: "manual"` prevents page-fragment output and leaves rendering to template code.
+- `renderMode: "both"` allows both paths.
+
+The package root exports framework-independent helpers for Astro components, pages, and tests:
+
+```ts
+import {
+	getRelatedContent,
+	renderRelatedContentSection,
+} from "emdash-plugin-related-content";
+
+const sections = await getRelatedContent({
+	sourceEntry,
+	relationships: [
+		{
+			sourceCollection: "tools",
+			relatedCollection: "posts",
+			heading: "Related posts on langui.ch",
+			renderMode: "manual",
+			relatedField: "relatedEntries",
+			matchSourceLinks: true,
+		},
+	],
+	content,
+});
+
+const html = sections
+	.map((section) =>
+		renderRelatedContentSection(section, {
+			className: "tool-related-posts",
+			listClassName: "related-post-list",
+			itemClassName: "",
+			linkClassName: "",
+			headingLevel: 3,
+			includeExcerpt: false,
+		}),
+	)
+	.join("");
+```
+
+That renderer configuration emits markup compatible with this shape:
+
+```html
+<section class="tool-related-posts">
+	<h3>Related posts on langui.ch</h3>
+	<ul class="related-post-list">
+		<li>
+			<a href="/posts/example/">Example post</a>
+		</li>
+	</ul>
+</section>
+```
 
 ## Matching
 
@@ -145,11 +204,27 @@ Pinned matches appear before non-pinned matches. Pinned entries with an explicit
 - `maxItems`: maximum rendered matches. Defaults to `6`.
 - `scanLimit`: maximum number of candidate entries fetched from a related collection. Defaults to `100`.
 - `placement`: page fragment placement. Defaults to `"body:end"`.
+- `renderMode`: `"fragment"`, `"manual"`, or `"both"`. Defaults to `"fragment"`.
 - `titleField`: display title field. Defaults to `title`, then `name`, then slug/id.
 - `excerptField`: optional excerpt field. Defaults to `excerpt`, then `description`, then `summary`.
 - `urlField`: optional field containing the public URL for a related entry.
 
 The generated HTML uses stable classes such as `emdash-related-content`, `emdash-related-content__list`, `emdash-related-content__item`, and `emdash-related-content__link`.
+
+## Build and Test
+
+```sh
+npm install
+npm test
+npm run build
+npm pack --dry-run
+```
+
+The package can be tested through a local checkout without publishing to npm:
+
+```sh
+npm install file:../emdash-plugin-related-content
+```
 
 ## Testing With Curated Lists
 
